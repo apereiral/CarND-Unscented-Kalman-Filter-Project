@@ -25,12 +25,30 @@ public:
 
   ///* state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
   VectorXd x_;
+  
+  ///* augmented state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate noise_a noise_yawdd] in SI units and rad
+  VectorXd x_aug_;
 
   ///* state covariance matrix
   MatrixXd P_;
+  
+  ///* augmented covariance matrix
+  MatrixXd P_aug_;
+  
+  ///* process noise covariance matrix
+  MatrixXd Q_;
+  
+  ///* radar measurement noise covariance matrix
+  MatrixXd R_radar_;
+  
+  ///* lidar measurement noise covariance matrix
+  MatrixXd R_lidar_;
 
   ///* predicted sigma points matrix
   MatrixXd Xsig_pred_;
+  
+  ///* lidar measurement function matrix
+  MatrixXd H_lidar_;
 
   ///* time when the state is true, in us
   long long time_us_;
