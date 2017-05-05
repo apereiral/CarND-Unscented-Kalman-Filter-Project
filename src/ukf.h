@@ -35,9 +35,6 @@ public:
   ///* augmented covariance matrix
   MatrixXd P_aug_;
   
-  ///* process noise covariance matrix
-  MatrixXd Q_;
-  
   ///* radar measurement noise covariance matrix
   MatrixXd R_radar_;
   
