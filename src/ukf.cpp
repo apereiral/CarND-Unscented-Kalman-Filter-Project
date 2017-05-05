@@ -16,7 +16,7 @@ UKF::UKF() {
   use_laser_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
-  use_radar_ = false;
+  use_radar_ = true;
 
   // initialize state vector dimension
   n_x_ = 5;
@@ -144,15 +144,16 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   double dt = (meas_package.timestamp_ - time_us_) / 1000000.0;	//dt - expressed in seconds
   time_us_ = meas_package.timestamp_;
 
+  //cout << x_ << "\n" << endl;
   /// Prediction step
   Prediction(dt);
   
   /// Update step
-  if(meas_package.sensor_type_ == MeasurementPackage::LASER){
+  if(meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_){
 	// lidar measurement
 	UpdateLidar(meas_package);
   }
-  if(meas_package.sensor_type_ == MeasurementPackage::RADAR){
+  if(meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_){
 	// radar measurement
 	UpdateRadar(meas_package);
   }
