@@ -197,9 +197,19 @@ void UKF::Prediction(double delta_t) {
 	float nu_ydd = Xsig_aug(6, j);
     Xsig_pred_(2, j) = v + delta_t*nu_a;
     Xsig_pred_(3, j) = yaw + delta_t*yawd + 0.5*delta_t*delta_t*nu_ydd;
-    Xsig_pred_(4, j) = yawd + delta_t*nu_ydd;
+	if(Xsig_pred_(3, j) > M_PI){
+		Xsig_pred_(3, j) += M_PI;
+		Xsig_pred_(3, j) = fmod(Xsig_pred_(3, j),2*M_PI);
+		Xsig_pred_(3, j) -= M_PI;
+	}
+	if(Xsig_pred_(3, j) < -M_PI){
+		Xsig_pred_(3, j) -= M_PI;
+		Xsig_pred_(3, j) = fmod(Xsig_pred_(3, j), -2*M_PI);
+		Xsig_pred_(3, j) += M_PI;
+	}
+	Xsig_pred_(4, j) = yawd + delta_t*nu_ydd;
     // avoid division by 0
-	if(yawd != 0){
+	if(fabs(yawd) > 0.001){
         Xsig_pred_(0, j) = p_x + v*(sin(yaw + yawd*delta_t) - sin(yaw))/yawd + 0.5*delta_t*delta_t*cos(yaw)*nu_a;
         Xsig_pred_(1, j) = p_y + v*(-cos(yaw + yawd*delta_t) + cos(yaw))/yawd + 0.5*delta_t*delta_t*sin(yaw)*nu_a;
     } else{
@@ -217,15 +227,35 @@ void UKF::Prediction(double delta_t) {
   // predicted covariance matrix
   VectorXd x_diff = Xsig_pred_.col(0) - x_;
   //normalize yaw angle
-  if(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
-  if(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
+  if(x_diff(3) > M_PI){
+	x_diff(3) += M_PI;
+	x_diff(3) = fmod(x_diff(3),2*M_PI);
+	x_diff(3) -= M_PI;
+  }
+  if(x_diff(3) < -M_PI){
+	x_diff(3) -= M_PI;
+	x_diff(3) = fmod(x_diff(3), -2*M_PI);
+	x_diff(3) += M_PI;
+  }
+  //while(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
+  //while(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
   P_ = weights_(0)*(x_diff)*(x_diff.transpose());
   for(int j = 1; j < 2*n_aug_ + 1; j++){
 	x_diff = Xsig_pred_.col(j) - x_;
+	if(x_diff(3) > M_PI){
+		x_diff(3) += M_PI;
+		x_diff(3) = fmod(x_diff(3),2*M_PI);
+		x_diff(3) -= M_PI;
+	}
+	if(x_diff(3) < -M_PI){
+		x_diff(3) -= M_PI;
+		x_diff(3) = fmod(x_diff(3), -2*M_PI);
+		x_diff(3) += M_PI;
+	}
 	//normalize yaw angle
-	if(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
-	if(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
-	P_ = weights_(j)*(x_diff)*(x_diff.transpose());
+	//while(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
+	//while(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
+	P_ += weights_(j)*(x_diff)*(x_diff.transpose());
   }
 }
 
@@ -261,16 +291,36 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   /// Calculate cross correlation matrix and Kalman gain matrix
   VectorXd x_diff = Xsig_pred_.col(0) - x_;
   //normalize yaw angle
-  if(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
-  if(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
+  if(x_diff(3) > M_PI){
+	x_diff(3) += M_PI;
+	x_diff(3) = fmod(x_diff(3),2*M_PI);
+	x_diff(3) -= M_PI;
+  }
+  if(x_diff(3) < -M_PI){
+	x_diff(3) -= M_PI;
+	x_diff(3) = fmod(x_diff(3), -2*M_PI);
+	x_diff(3) += M_PI;
+  }
+  //while(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
+  //while(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
   // calculate cross correlation matrix
   MatrixXd Tc = weights_(0)*(x_diff)*((Zsig_pred.col(0) - z_pred).transpose());
   for(int j = 1; j < 2*n_aug_ + 1; j++){
 	x_diff = Xsig_pred_.col(j) - x_;
 	//normalize yaw angle
-	if(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
-    if(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
-	Tc += weights_(j)*(x_diff)*(Zsig_pred.col(j) - z_pred).transpose();
+	if(x_diff(3) > M_PI){
+		x_diff(3) += M_PI;
+		x_diff(3) = fmod(x_diff(3),2*M_PI);
+		x_diff(3) -= M_PI;
+	}
+	if(x_diff(3) < -M_PI){
+		x_diff(3) -= M_PI;
+		x_diff(3) = fmod(x_diff(3), -2*M_PI);
+		x_diff(3) += M_PI;
+	}
+	//while(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
+    //while(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
+	Tc += weights_(j)*(x_diff)*((Zsig_pred.col(j) - z_pred).transpose());
   }
   // calculate Kalman gain matrix
   MatrixXd S_inv = S.inverse();
@@ -312,13 +362,33 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   }
   // predicted measurement covariance matrix
   VectorXd z_diff = Zsig_pred.col(0) - z_pred;
-  if(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
-  if(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
+  if(z_diff(1) > M_PI){
+	z_diff(1) += M_PI;
+	z_diff(1) = fmod(z_diff(1),2*M_PI);
+	z_diff(1) -= M_PI;
+  }
+  if(z_diff(1) < -M_PI){
+	z_diff(1) -= M_PI;
+	z_diff(1) = fmod(z_diff(1), -2*M_PI);
+	z_diff(1) += M_PI;
+  }
+  //while(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
+  //while(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
   MatrixXd S = weights_(0)*(z_diff)*(z_diff.transpose());
   for(int j = 1; j < 2*n_aug_ + 1; j++){
 	z_diff = Zsig_pred.col(j) - z_pred;
-	if(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
-    if(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
+	if(z_diff(1) > M_PI){
+		z_diff(1) += M_PI;
+		z_diff(1) = fmod(z_diff(1),2*M_PI);
+		z_diff(1) -= M_PI;
+	}
+	if(z_diff(1) < -M_PI){
+		z_diff(1) -= M_PI;
+		z_diff(1) = fmod(z_diff(1), -2*M_PI);
+		z_diff(1) += M_PI;
+	}
+	//while(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
+    //while(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
 	S += weights_(j)*(z_diff)*(z_diff.transpose());
   }
   S += R_radar_;
@@ -329,21 +399,61 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   /// Calculate cross correlation matrix and Kalman gain matrix
   VectorXd x_diff = Xsig_pred_.col(0) - x_;
   //normalize yaw angle
-  if(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
-  if(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
+  if(x_diff(3) > M_PI){
+	x_diff(3) += M_PI;
+	x_diff(3) = fmod(x_diff(3),2*M_PI);
+	x_diff(3) -= M_PI;
+  }
+  if(x_diff(3) < -M_PI){
+	x_diff(3) -= M_PI;
+	x_diff(3) = fmod(x_diff(3), -2*M_PI);
+	x_diff(3) += M_PI;
+  }
+  //while(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
+  //while(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
   z_diff = Zsig_pred.col(0) - z_pred;
-  if(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
-  if(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
+  if(z_diff(1) > M_PI){
+	z_diff(1) += M_PI;
+	z_diff(1) = fmod(z_diff(1),2*M_PI);
+	z_diff(1) -= M_PI;
+  }
+  if(z_diff(1) < -M_PI){
+	z_diff(1) -= M_PI;
+	z_diff(1) = fmod(z_diff(1), -2*M_PI);
+	z_diff(1) += M_PI;
+  }
+  //while(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
+  //while(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
   // calculate cross correlation matrix
   MatrixXd Tc = weights_(0)*(x_diff)*(z_diff).transpose();
   for(int j = 1; j < 2*n_aug_ + 1; j++){
 	x_diff = Xsig_pred_.col(j) - x_;
 	//normalize yaw angle
-	if(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
-    if(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
+	if(x_diff(3) > M_PI){
+		x_diff(3) += M_PI;
+		x_diff(3) = fmod(x_diff(3),2*M_PI);
+		x_diff(3) -= M_PI;
+	}
+	if(x_diff(3) < -M_PI){
+		x_diff(3) -= M_PI;
+		x_diff(3) = fmod(x_diff(3), -2*M_PI);
+		x_diff(3) += M_PI;
+	}
+	//while(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
+    //while(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
 	z_diff = Zsig_pred.col(j) - z_pred;
-	if(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
-    if(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
+	if(z_diff(1) > M_PI){
+		z_diff(1) += M_PI;
+		z_diff(1) = fmod(z_diff(1),2*M_PI);
+		z_diff(1) -= M_PI;
+	}
+	if(z_diff(1) < -M_PI){
+		z_diff(1) -= M_PI;
+		z_diff(1) = fmod(z_diff(1), -2*M_PI);
+		z_diff(1) += M_PI;
+	}
+	//while(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
+    //while(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
 	Tc += weights_(j)*(x_diff)*(z_diff.transpose());
   }
   // calculate Kalman gain matrix
@@ -352,7 +462,20 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   /// Update state vector and covariance matrix
   // update mean state vector
-  x_ += K*(z - z_pred);
+  z_diff = z - z_pred;
+  if(z_diff(1) > M_PI){
+	z_diff(1) += M_PI;
+	z_diff(1) = fmod(z_diff(1),2*M_PI);
+	z_diff(1) -= M_PI;
+  }
+  if(z_diff(1) < -M_PI){
+	z_diff(1) -= M_PI;
+	z_diff(1) = fmod(z_diff(1), -2*M_PI);
+	z_diff(1) += M_PI;
+  }
+  //while(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
+  //while(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
+  x_ += K*(z_diff);
   // update state covariance matrix
   P_ -= K*S*K.transpose();
   
