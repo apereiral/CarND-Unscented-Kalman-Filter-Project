@@ -281,6 +281,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   x_ += K*(z - z_pred);
   // update state covariance matrix
   P_ -= K*S*K.transpose();
+
+  NIS_laser_ = ((z - z_pred).transpose())*(S_inv)*(z - z_pred);
 }
 
 /**
@@ -355,4 +357,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   x_ += K*(z - z_pred);
   // update state covariance matrix
   P_ -= K*S*K.transpose();
+  
+  NIS_radar_ = (z_diff.transpose())*S_inv*z_diff;
 }
