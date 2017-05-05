@@ -301,4 +301,62 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
+  /// Calculate predicted measured state and covariance matrix
+  // predicted measured sigma points matrix
+  MatrixXd Zsig_pred = MatrixXd(3, 2*n_aug_ + 1);
+  for(int j = 0; j < 2*n_aug_ + 1; j++){
+	  Zsig_pred(0, j) = sqrt(Xsig_pred_(0, j)*Xsig_pred_(0, j) + Xsig_pred_(1, j)*Xsig_pred_(1, j));
+	  Zsig_pred(1, j) = atan2(Xsig_pred_(1, j), Xsig_pred_(0, j));
+	  Zsig_pred(2, j) = (Xsig_pred_(0, j)*cos(Xsig_pred_(3, j)) + 
+						Xsig_pred_(1, j)*sin(Xsig_pred_(3, j)))*Xsig_pred_(2, j)/Zsig_pred(0, j);
+  }
+  // predicted mean state
+  VectorXd z_pred = weights_(0)*Zsig_pred.col(0);
+  for(int j = 1; j < 2*n_aug_ + 1; j++){
+	z_pred += weights_(j)*Zsig_pred.col(j);
+  }
+  // predicted measurement covariance matrix
+  VectorXd z_diff = Zsig_pred.col(0) - z_pred;
+  if(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
+  if(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
+  MatrixXd S = weights_(0)*(z_diff)*(z_diff.transpose());
+  for(int j = 1; j < 2*n_aug_ + 1; j++){
+	z_diff = Zsig_pred.col(j) - z_pred;
+	if(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
+    if(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
+	S += weights_(j)*(z_diff)*(z_diff.transpose());
+  }
+  S += R_radar_;
+
+  // read new lidar measurements
+  VectorXd z = meas_package.raw_measurements_;
+
+  /// Calculate cross correlation matrix and Kalman gain matrix
+  VectorXd x_diff = Xsig_pred_.col(0) - x_;
+  //normalize yaw angle
+  if(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
+  if(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
+  z_diff = Zsig_pred.col(0) - z_pred;
+  if(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
+  if(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
+  // calculate cross correlation matrix
+  MatrixXd Tc = weights_(0)*(x_diff)*(z_diff).transpose();
+  for(int j = 1; j < 2*n_aug_ + 1; j++){
+	x_diff = Xsig_pred_.col(j) - x_;
+	//normalize yaw angle
+	if(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
+    if(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
+	z_diff = Zsig_pred.col(j) - z_pred;
+	if(z_diff(1) > M_PI) z_diff(1) -= 2*M_PI;
+    if(z_diff(1) < -M_PI) z_diff(1) += 2*M_PI;
+	Tc += weights_(j)*(x_diff)*(z_diff.transpose());
+  }
+  // calculate Kalman gain matrix
+  MatrixXd K = Tc*S.inverse();
+
+  /// Update state vector and covariance matrix
+  // update mean state vector
+  x_ += K*(z - z_pred);
+  // update state covariance matrix
+  P_ -= K*S*K.transpose();
 }
