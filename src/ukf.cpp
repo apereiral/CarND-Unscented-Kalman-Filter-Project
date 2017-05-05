@@ -49,7 +49,7 @@ UKF::UKF() {
   Xsig_pred_ = MatrixXd(n_x_, 2*n_aug_ + 1);
   
   // initial lidar measurement function matrix
-  H_lidar_ = MatrixXd(2, 2*n_aug_ + 1);
+  H_lidar_ = MatrixXd(2, n_x_);
 
   // initial weights vector
   weights_ = VectorXd(2*n_aug_ + 1);
@@ -105,7 +105,7 @@ UKF::UKF() {
 
   // weights vector
   weights_(0) = lambda_/(lambda_ + n_aug_);
-  for(int i = 0; i < 2*n_aug_ + 1; i++){
+  for(int i = 1; i < 2*n_aug_ + 1; i++){
 	  weights_(i) = 0.5/(lambda_ + n_aug_);
   }
 }
