@@ -272,7 +272,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 	Tc += weights_(j)*(x_diff)*(Zsig_pred.col(j) - z_pred).transpose();
   }
   // calculate Kalman gain matrix
-  MatrixXd K = Tc*S.inverse();
+  MatrixXd S_inv = S.inverse();
+  MatrixXd K = Tc*S_inv;
 
   /// Update state vector and covariance matrix
   // update mean state vector
