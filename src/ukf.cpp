@@ -144,7 +144,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   double dt = (meas_package.timestamp_ - time_us_) / 1000000.0;	//dt - expressed in seconds
   time_us_ = meas_package.timestamp_;
 
-  //cout << x_ << "\n" << endl;
   /// Prediction step
   Prediction(dt);
   
@@ -188,14 +187,14 @@ void UKF::Prediction(double delta_t) {
   }
   // predict sigma points from process function
   for(int j = 0; j < 2*n_aug_ + 1; j++){
-	float p_x = Xsig_aug(0, j);
-	float p_y = Xsig_aug(1, j);
-	float v = Xsig_aug(2, j);
-	float yaw = Xsig_aug(3, j);
-	float yawd = Xsig_aug(4, j);
-	float nu_a = Xsig_aug(5, j);
-	float nu_ydd = Xsig_aug(6, j);
-    Xsig_pred_(2, j) = v + delta_t*nu_a;
+	double p_x = Xsig_aug(0, j);
+	double p_y = Xsig_aug(1, j);
+	double v = Xsig_aug(2, j);
+	double yaw = Xsig_aug(3, j);
+	double yawd = Xsig_aug(4, j);
+	double nu_a = Xsig_aug(5, j);
+	double nu_ydd = Xsig_aug(6, j);
+	Xsig_pred_(2, j) = v + delta_t*nu_a;
     Xsig_pred_(3, j) = yaw + delta_t*yawd + 0.5*delta_t*delta_t*nu_ydd;
 	Xsig_pred_(4, j) = yawd + delta_t*nu_ydd;
     // avoid division by 0
@@ -256,7 +255,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   x_(3) = NormAngle(x_(3));
   P_ -= K*H_lidar_*P_;
 
-  NIS_laser_ = ((z - z_pred).transpose())*(S_inv)*(z - z_pred);
+  /// Calculate NIS for consistency check
+  NIS_laser_ = (y.transpose())*(S_inv)*(y);
 }
 
 /**
