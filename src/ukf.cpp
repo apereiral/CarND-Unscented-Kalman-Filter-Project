@@ -241,66 +241,20 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   It also calculates the lidar NIS.
   */
   /// Calculate predicted measured state and covariance matrix
-  // predicted measured sigma points matrix
-  MatrixXd Zsig_pred = H_lidar_*Xsig_pred_;
-  // predicted mean state
-  VectorXd z_pred = weights_(0)*Zsig_pred.col(0);
-  for(int j = 1; j < 2*n_aug_ + 1; j++){
-	z_pred += weights_(j)*Zsig_pred.col(j);
-  }
-  // predicted measurement covariance matrix
-  MatrixXd S = weights_(0)*(Zsig_pred.col(0) - z_pred)*((Zsig_pred.col(0) - z_pred).transpose());
-  for(int j = 1; j < 2*n_aug_ + 1; j++){
-	S += weights_(j)*(Zsig_pred.col(j) - z_pred)*((Zsig_pred.col(j) - z_pred).transpose());
-  }
-  S += R_lidar_;
-
   // read new lidar measurements
   VectorXd z = meas_package.raw_measurements_;
-
-  /// Calculate cross correlation matrix and Kalman gain matrix
-  VectorXd x_diff = Xsig_pred_.col(0) - x_;
-  //normalize yaw angle
-  if(x_diff(3) > M_PI){
-	x_diff(3) += M_PI;
-	x_diff(3) = fmod(x_diff(3),2*M_PI);
-	x_diff(3) -= M_PI;
-  }
-  if(x_diff(3) < -M_PI){
-	x_diff(3) -= M_PI;
-	x_diff(3) = fmod(x_diff(3), -2*M_PI);
-	x_diff(3) += M_PI;
-  }
-  //while(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
-  //while(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
-  // calculate cross correlation matrix
-  MatrixXd Tc = weights_(0)*(x_diff)*((Zsig_pred.col(0) - z_pred).transpose());
-  for(int j = 1; j < 2*n_aug_ + 1; j++){
-	x_diff = Xsig_pred_.col(j) - x_;
-	//normalize yaw angle
-	if(x_diff(3) > M_PI){
-		x_diff(3) += M_PI;
-		x_diff(3) = fmod(x_diff(3),2*M_PI);
-		x_diff(3) -= M_PI;
-	}
-	if(x_diff(3) < -M_PI){
-		x_diff(3) -= M_PI;
-		x_diff(3) = fmod(x_diff(3), -2*M_PI);
-		x_diff(3) += M_PI;
-	}
-	//while(x_diff(3) > M_PI) x_diff(3) -= 2*M_PI;
-    //while(x_diff(3) < -M_PI) x_diff(3) += 2*M_PI;
-	Tc += weights_(j)*(x_diff)*((Zsig_pred.col(j) - z_pred).transpose());
-  }
-  // calculate Kalman gain matrix
+  // apply linear KF equations
+  VectorXd z_pred = H_lidar_*x_;
+  VectorXd y = z - z_pred;
+  MatrixXd PHt = P_*H_lidar_.transpose();
+  MatrixXd S = H_lidar_*PHt + R_lidar_;
   MatrixXd S_inv = S.inverse();
-  MatrixXd K = Tc*S_inv;
+  MatrixXd K = PHt*S_inv;
 
-  /// Update state vector and covariance matrix
-  // update mean state vector
-  x_ += K*(z - z_pred);
-  // update state covariance matrix
-  P_ -= K*S*K.transpose();
+  x_ += K*y;
+  //normalize yaw angle
+  x_(3) = NormAngle(x_(3));
+  P_ -= K*H_lidar_*P_;
 
   NIS_laser_ = ((z - z_pred).transpose())*(S_inv)*(z - z_pred);
 }
