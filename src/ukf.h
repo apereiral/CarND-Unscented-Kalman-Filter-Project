@@ -123,6 +123,8 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+  
+  double NormAngle(double angle);
 };
 
 #endif /* UKF_H */
