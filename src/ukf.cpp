@@ -274,10 +274,17 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   // predicted measured sigma points matrix
   MatrixXd Zsig_pred = MatrixXd(3, 2*n_aug_ + 1);
   for(int j = 0; j < 2*n_aug_ + 1; j++){
-	  Zsig_pred(0, j) = sqrt(Xsig_pred_(0, j)*Xsig_pred_(0, j) + Xsig_pred_(1, j)*Xsig_pred_(1, j));
-	  Zsig_pred(1, j) = atan2(Xsig_pred_(1, j), Xsig_pred_(0, j));
-	  Zsig_pred(2, j) = (Xsig_pred_(0, j)*cos(Xsig_pred_(3, j)) + 
-						Xsig_pred_(1, j)*sin(Xsig_pred_(3, j)))*Xsig_pred_(2, j)/Zsig_pred(0, j);
+	// avoid discontinuities in the atan2 function
+	// and division by 0 if Zsig_pred(0, j) = 0
+	if(fabs(Xsig_pred_(0, j)) < 0.001){
+		if(Xsig_pred_(0, j) > 0) Xsig_pred_(0, j) = 0.001;
+		if(Xsig_pred_(0, j) < 0) Xsig_pred_(0, j) = -0.001;
+	}
+	// apply radar measurement functions
+	Zsig_pred(0, j) = sqrt(Xsig_pred_(0, j)*Xsig_pred_(0, j) + Xsig_pred_(1, j)*Xsig_pred_(1, j));
+	Zsig_pred(1, j) = atan2(Xsig_pred_(1, j), Xsig_pred_(0, j));
+	Zsig_pred(2, j) = (Xsig_pred_(0, j)*cos(Xsig_pred_(3, j)) +
+					   Xsig_pred_(1, j)*sin(Xsig_pred_(3, j)))*Xsig_pred_(2, j)/Zsig_pred(0, j);
   }
   // predicted mean state
   VectorXd z_pred = weights_(0)*Zsig_pred.col(0);
